@@ -15,6 +15,10 @@ var album chan string
 var w sync.WaitGroup
 var dir string
 
+func getImageFromUrl(infos []OpenImageInfo) {
+
+}
+
 func TestMain() {
 	dir = "tmp_chenjo/"
 	err := os.Mkdir(dir, 0777)

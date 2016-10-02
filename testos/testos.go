@@ -12,6 +12,7 @@ type OpenImageInfo struct {
 	fileIdx   string
 	fileUrl   string
 	fileTitle string
+	stringAll string
 }
 
 //import "os"
@@ -45,7 +46,7 @@ func LoadingOpenImageInfo(filePath string) (infos []OpenImageInfo) {
 			panic(err)
 		}
 		splits := strings.Split(line, ",")
-		infos = append(infos, OpenImageInfo{splits[0], splits[1], splits[len(splits)-1]})
+		infos = append(infos, OpenImageInfo{splits[0], splits[1], splits[len(splits)-1], line})
 
 		defer func() {
 			f.Close()
