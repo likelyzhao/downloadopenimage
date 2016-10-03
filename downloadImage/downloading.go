@@ -28,15 +28,11 @@ func PathExists(path string) (bool, error) {
 
 func getImageFromURL(url string, savepath string) error {
 	fmt.Printf("begin reading %s\n", url)
-	flag, _ := PathExists(savepath)
-	if flag == true {
-		return nil
-	}
 
 	data, err := getUrl(url)
 	if err != nil {
 		album <- "error"
-		panic(err)
+		//panic(err)
 	}
 	//data := []byte{1, 2}
 	album <- "OK"
@@ -57,6 +53,7 @@ func getImageFromURL(url string, savepath string) error {
 	}
 
 	defer func() {
+		recover()
 		fmt.Println(recover())
 		defer f.Close()
 		log.Println(album)
@@ -76,8 +73,13 @@ func TestMain(infos []loadInfos.OpenImageInfo, savedir string) {
 	f, err := os.Create("log.txt")
 	logger = log.New(f, "", 0)
 	album = make(chan string, len(infos))
+
 	for _, v := range infos {
 		saveimagepath := savedir + v.FileIdx + ".jpg"
+		flag, _ := PathExists(saveimagepath)
+		if flag == true {
+			continue
+		}
 		w.Add(1)
 		go getImageFromURL(v.FileURL, saveimagepath)
 		time.Sleep(time.Second / 10)
