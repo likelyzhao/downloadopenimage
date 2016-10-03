@@ -9,10 +9,10 @@ import (
 )
 
 type OpenImageInfo struct {
-	fileIdx   string
-	fileUrl   string
-	fileTitle string
-	stringAll string
+	FileIdx   string
+	FileURL   string
+	FileTitle string
+	Allstring string
 }
 
 //import "os"
@@ -46,6 +46,7 @@ func LoadingOpenImageInfo(filePath string) (infos []OpenImageInfo) {
 			panic(err)
 		}
 		splits := strings.Split(line, ",")
+		splits[len(splits)-1] = SubString(splits[len(splits)-1], 1, len(splits[len(splits)-1])-3)
 		infos = append(infos, OpenImageInfo{splits[0], splits[1], splits[len(splits)-1], line})
 
 		defer func() {
@@ -54,6 +55,29 @@ func LoadingOpenImageInfo(filePath string) (infos []OpenImageInfo) {
 		}()
 	}
 
+}
+
+func SubString(str string, begin, length int) (substr string) {
+	// 将字符串的转换成[]rune
+	rs := []rune(str)
+	lth := len(rs)
+	if length < 0 {
+		return str
+	}
+	// 简单的越界判断
+	if begin < 0 {
+		begin = 0
+	}
+	if begin >= lth {
+		begin = lth
+	}
+	end := begin + length
+	if end > lth {
+		end = lth - 1
+	}
+	// 返回子串
+	//fmt.Printf("begin = %d end = %d length = %d\n", begin, end, length)
+	return string(rs[begin:end])
 }
 
 /*
