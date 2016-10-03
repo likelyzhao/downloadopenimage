@@ -15,7 +15,24 @@ var album chan string
 var w sync.WaitGroup
 var logger *log.Logger
 
+func PathExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, err
+}
+
 func getImageFromURL(url string, savepath string) error {
+	fmt.Printf("begin reading %s\n", url)
+	flag, _ := PathExists(savepath)
+	if flag == true {
+		return nil
+	}
+
 	data, err := getUrl(url)
 	if err != nil {
 		album <- "error"
@@ -24,6 +41,7 @@ func getImageFromURL(url string, savepath string) error {
 	//data := []byte{1, 2}
 	album <- "OK"
 	//	os.exis(savepath)
+
 	f, err := os.Create(savepath)
 	if err != nil {
 		if true == os.IsExist(err) {
@@ -39,11 +57,12 @@ func getImageFromURL(url string, savepath string) error {
 	}
 
 	defer func() {
-		//fmt.Println(recover())
-		f.Close()
+		fmt.Println(recover())
+		defer f.Close()
 		log.Println(album)
 		w.Done()
 	}()
+	fmt.Printf("end reading %s\n", url)
 	return err
 }
 
@@ -61,7 +80,7 @@ func TestMain(infos []loadInfos.OpenImageInfo, savedir string) {
 		saveimagepath := savedir + v.FileIdx + ".jpg"
 		w.Add(1)
 		go getImageFromURL(v.FileURL, saveimagepath)
-		time.Sleep(time.Second)
+		time.Sleep(time.Second / 10)
 		//logger.Println(v.Allstring + <-album)
 		//w.Wait()
 	}
@@ -86,9 +105,8 @@ func getUrl(url string) (data []byte, err error) {
 		return data, err
 	}
 	body := ret.Body
-	fmt.Printf("begin reading %s\n", url)
+
 	data, _ = ioutil.ReadAll(body)
-	fmt.Printf("end reading %s\n", url)
 
 	return data, nil
 }
