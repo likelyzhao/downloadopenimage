@@ -6,37 +6,42 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"regexp"
-	"strings"
 	"sync"
 	"testos"
+	"time"
 )
 
-var urlist = [...]string{"http://stock.591hx.com/article/2014-12-03/0000850005s.shtml"}
 var album chan string
 var w sync.WaitGroup
 var logger *log.Logger
-var dir string
 
 func getImageFromURL(url string, savepath string) error {
-	data := GetUrl(url)
+	data, err := getUrl(url)
+	if err != nil {
+		album <- "error"
+		panic(err)
+	}
+	//data := []byte{1, 2}
 	album <- "OK"
 	//	os.exis(savepath)
 	f, err := os.Create(savepath)
 	if err != nil {
 		if true == os.IsExist(err) {
+			album <- "error"
 			return err
 		}
 		panic(err)
 	}
 	_, err = f.Write(data)
 	if err != nil {
+		album <- "error"
 		panic(err)
 	}
 
-	f.Close()
 	defer func() {
+		//fmt.Println(recover())
 		f.Close()
+		log.Println(album)
 		w.Done()
 	}()
 	return err
@@ -51,18 +56,18 @@ func TestMain(infos []loadInfos.OpenImageInfo, savedir string) {
 	}
 	f, err := os.Create("log.txt")
 	logger = log.New(f, "", 0)
-
-	//	for i := 0; i < 10; i++ {
-
-	//	}
-
-	album = make(chan string, 200)
+	album = make(chan string, len(infos))
 	for _, v := range infos {
 		saveimagepath := savedir + v.FileIdx + ".jpg"
 		w.Add(1)
 		go getImageFromURL(v.FileURL, saveimagepath)
-		logger.Println(v.Allstring, <-album)
+		time.Sleep(time.Second)
+		//logger.Println(v.Allstring + <-album)
 		//w.Wait()
+	}
+	w.Wait()
+	for i := 0; i < len(infos); i++ {
+		logger.Println(infos[i].Allstring + <-album)
 	}
 
 	f.Close()
@@ -74,76 +79,16 @@ func TestMain(infos []loadInfos.OpenImageInfo, savedir string) {
 	//}
 }
 
-func GetAlbum(url string) {
-	data := GetUrl(url)
-	body := string(data)
-	//
-
-	part := regexp.MustCompile(``)
-	match := part.FindAllStringSubmatch(body, -1)
-	for _, v := range match {
-
-		if m, _ := regexp.MatchString(`.*/hnimg/201412/03/.*\.jpg`, v[1]); !m {
-			continue
-		}
-		//println(v[1])
-		album <- v[1]
-		w.Add(1)
-		go GetItem()
-	}
-	w.Done()
-
-}
-
-func GetItem() {
-	url := <-album
-	println(url)
-	defer func() {
-		ret := recover()
-		if ret != nil {
-			log.Println(ret)
-			w.Done()
-		} else {
-			w.Done()
-		}
-	}()
-
-	//data := GetUrl(url)
-	//if len(data) > 10 {
-	//body := string(data)
-	//part := regexp.MustCompile(`bigimgsrc="(.*)"`)
-	//match := part.FindAllStringSubmatch(body, -1)
-	//for _, v := range match {
-	str := strings.Split(url, "/")
-	length := len(str)
-	source := GetUrl(url)
-	name := str[length-1]
-	file, err := os.Create(dir + name)
-	if err != nil {
-		panic(err)
-	}
-	size, err := file.Write(source)
-	defer file.Close()
-	if err != nil {
-		panic(err)
-	}
-	log.Println(size)
-	//}
-	//}
-}
-
-func GetUrl(url string) []byte {
+func getUrl(url string) (data []byte, err error) {
 	ret, err := http.Get(url)
 	if err != nil {
 		log.Println(url)
-		status := map[string]string{}
-		status["status"] = "400"
-		status["url"] = url
-		panic(status)
+		return data, err
 	}
 	body := ret.Body
 	fmt.Printf("begin reading %s\n", url)
-	data, _ := ioutil.ReadAll(body)
+	data, _ = ioutil.ReadAll(body)
 	fmt.Printf("end reading %s\n", url)
-	return data
+
+	return data, nil
 }
