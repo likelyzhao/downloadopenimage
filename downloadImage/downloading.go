@@ -12,6 +12,7 @@ import (
 )
 
 var album chan string
+var flags chan string
 var w sync.WaitGroup
 var logger *log.Logger
 
@@ -27,11 +28,13 @@ func PathExists(path string) (bool, error) {
 }
 
 func getImageFromURL(url string, savepath string) error {
-	fmt.Printf("begin reading %s\n", url)
+	//var url string
 
+	fmt.Printf("begin reading %s\n", url)
 	data, err := getUrl(url)
 	if err != nil {
 		album <- "error"
+		<-flags
 		//panic(err)
 	}
 	//data := []byte{1, 2}
@@ -42,6 +45,7 @@ func getImageFromURL(url string, savepath string) error {
 	if err != nil {
 		if true == os.IsExist(err) {
 			album <- "error"
+			<-flags
 			return err
 		}
 		panic(err)
@@ -57,7 +61,8 @@ func getImageFromURL(url string, savepath string) error {
 		fmt.Println(recover())
 		defer f.Close()
 		log.Println(album)
-		w.Done()
+		//	w.Done()
+		<-flags
 	}()
 	fmt.Printf("end reading %s\n", url)
 	return err
@@ -72,6 +77,8 @@ func TestMain(infos []loadInfos.OpenImageInfo, savedir string) {
 	}
 	f, err := os.Create("log.txt")
 	logger = log.New(f, "", 0)
+
+	flags = make(chan string, 5000)
 	album = make(chan string, len(infos))
 
 	for _, v := range infos {
@@ -80,7 +87,9 @@ func TestMain(infos []loadInfos.OpenImageInfo, savedir string) {
 		if flag == true {
 			continue
 		}
-		w.Add(1)
+		// w.Add(1)
+		//`go getImageFromURL(v.FileUR`L, saveimagepath)`
+		flags <- "ok"
 		go getImageFromURL(v.FileURL, saveimagepath)
 		time.Sleep(time.Second / 10)
 		//logger.Println(v.Allstring + <-album)
